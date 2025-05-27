@@ -1,0 +1,69 @@
+module solar_tb;
+
+    // Inputs
+    reg clk;
+    reg rst;
+    reg ldrsensor1;
+    reg ldrsensor2;
+    reg rain;
+
+    // Output
+    wire pwmout,sw;
+
+    // Instantiate the Unit Under Test (UUT)
+    solar uut (
+        .clk(clk),
+        .rst(rst),
+        .ldrsensor1(ldrsensor1),
+        .ldrsensor2(ldrsensor2),
+        .rain(rain),
+        .pwmout(pwmout),
+        .sw(sw)
+    );
+
+    // Clock Generation
+    initial begin
+        clk = 0;
+        forever #10 clk = ~clk;  // 50MHz clock => 20ns period
+    end
+
+    // Stimulus
+    initial begin
+        // Initialize Inputs
+        rst = 1;
+        ldrsensor1 = 0;
+        ldrsensor2 = 0;
+        rain = 0;
+
+        // Apply Reset
+        #50;
+        rst = 0;
+
+        // Test Case 1: No rain, LDR values same
+        #100;
+        ldrsensor1 = 1;
+        ldrsensor2 = 1;
+        rain = 0;
+
+        // Test Case 2: Rain detected, LDR1 < LDR2
+        #100;
+        ldrsensor1 = 0;
+        ldrsensor2 = 1;
+        rain = 1;
+
+        // Test Case 3: Rain detected, LDR1 > LDR2
+        #100;
+        ldrsensor1 = 1;
+        ldrsensor2 = 0;
+        rain = 1;
+
+        // Test Case 4: Rain stopped
+        #100;
+        rain = 0;
+
+        // End simulation
+        #200;
+        $finish;
+    end
+
+endmodule

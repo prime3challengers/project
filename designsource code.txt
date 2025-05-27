@@ -1,0 +1,89 @@
+module ldrsensor (clk,rst, ldr_value,led);
+input clk,rst,ldr_value;
+output reg led;
+always@(posedge clk or posedge rst)
+begin  
+if (rst) begin
+led <= 1'b0;
+end else begin
+if (ldr_value==1'b0) begin
+led <= 1'b0;//if light detected  less than threshhold led is on
+end else begin
+led <= 1'b1;//if light detectd id greater than threshold led is off
+end
+end
+end
+endmodule
+module rainsensor(clk,reset,rain_sensor_in,rain_detected);
+input clk,reset,rain_sensor_in;
+output reg rain_detected;
+always @(posedge clk or posedge reset) begin
+if (reset) begin
+rain_detected <= 1'b0;
+end else begin
+if(rain_sensor_in==0)
+rain_detected<=1'b1; //led is on if rain detected
+else
+rain_detected<=1'b0; //led is off if rain is not detected
+end 
+end
+endmodule
+module Servo(clk,rst,angle_sel,servo_out);
+input clk,rst,angle_sel;
+output reg servo_out;
+
+    // Constants for 50 MHz
+    parameter PWM_PERIOD = 1_000_000; // 20ms period (50Hz): 20ms * 50MHz = 1,000,000
+    parameter PULSE_0   = 50_000;     // 1ms  = 50,000 cycles
+    parameter PULSE_90 = 100000;    // 1.5ms = 100,000 cycles
+
+    reg [19:0] counter = 0;
+    reg [19:0] pulse_width;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter <= 0;
+            servo_out <= 0;
+        end else begin
+            // Select pulse width based on angle_sel
+            case (angle_sel)
+                1'b0: pulse_width <= PULSE_0;   // 0°
+                1'b1: pulse_width <= PULSE_90; // 90°
+                default: pulse_width <= PULSE_0;
+            endcase
+
+            // PWM generation
+            if (counter < pulse_width)
+                servo_out <= 1;
+            else
+                servo_out <= 0;
+
+            counter <= counter + 1;
+            if (counter >= PWM_PERIOD)
+                counter <= 0;
+        end
+    end
+endmodule
+
+module solar(clk,rst,ldrsensor1,ldrsensor2,rain,sw,pwmout);
+input clk,rst,ldrsensor1,ldrsensor2,rain;
+output pwmout;
+output reg sw;
+wire led1,led2,raindetected;
+ldrsensor s1(clk,rst, ldrsensor1,led1);
+ldrsensor s2(clk,rst, ldrsensor2,led2);
+rainsensor s3(clk,rst,rain,raindetected);
+Servo s4(clk,rst,sw,pwmout);
+
+always@(*)
+begin
+if(rain==1'b1) begin
+    if(ldrsensor1 < ldrsensor2) 
+        sw<=1'b1;
+    else
+        sw<=1'b0;
+end
+else begin
+   sw<=1'b0; end
+end
+endmodule
